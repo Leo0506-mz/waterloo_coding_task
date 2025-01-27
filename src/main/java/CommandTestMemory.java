@@ -23,7 +23,7 @@ public class CommandTestMemory {
         commands.add(new String[]{"df", "-h"});
 
         for (String[] command : commands) {
-            int repeatTimes = 10;
+            int repeatTimes = 100;
             String commandStr = String.join(" ", command);
             System.out.println("===== Testing Command: " + commandStr + " =====");
             String resultHeader = "Command: " + commandStr + "\n";
