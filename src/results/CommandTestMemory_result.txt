@@ -1,41 +1,41 @@
 ===== Execution Times and Memory Usage =====
 Command: ls -l ./src/documents/ls
 Apache Exec (capture) - Average Memory: 298.35 KB
-ProcessBuilder (capture) -  Average Memory: 165.70 KB
-Apache Exec (no capture) - Average Memory: 284.69 KB
-ProcessBuilder (no capture) - Average Memory: 163.88 KB
+ProcessBuilder (capture) -  Average Memory: 165.69 KB
+Apache Exec (no capture) - Average Memory: 286.04 KB
+ProcessBuilder (no capture) - Average Memory: 163.87 KB
 
 
 Command: wc -l ./src/documents/wc/example.txt
-Apache Exec (capture) - Average Memory: 291.52 KB
-ProcessBuilder (capture) -  Average Memory: 163.88 KB
-Apache Exec (no capture) - Average Memory: 273.76 KB
-ProcessBuilder (no capture) - Average Memory: 163.88 KB
+Apache Exec (capture) - Average Memory: 296.97 KB
+ProcessBuilder (capture) -  Average Memory: 163.87 KB
+Apache Exec (no capture) - Average Memory: 296.97 KB
+ProcessBuilder (no capture) - Average Memory: 163.87 KB
 
 
 Command: curl -I https://www.google.com
-Apache Exec (capture) - Average Memory: 292.89 KB
-ProcessBuilder (capture) -  Average Memory: 163.88 KB
-Apache Exec (no capture) - Average Memory: 287.43 KB
-ProcessBuilder (no capture) - Average Memory: 167.98 KB
+Apache Exec (capture) - Average Memory: 292.87 KB
+ProcessBuilder (capture) -  Average Memory: 163.87 KB
+Apache Exec (no capture) - Average Memory: 292.87 KB
+ProcessBuilder (no capture) - Average Memory: 163.87 KB
 
 
 Command: openssl rand -base64 1048576
-Apache Exec (capture) - Average Memory: 8786.84 KB
-ProcessBuilder (capture) -  Average Memory: 3739.20 KB
-Apache Exec (no capture) - Average Memory: 413.59 KB
-ProcessBuilder (no capture) - Average Memory: 178.58 KB
+Apache Exec (capture) - Average Memory: 8716.90 KB
+ProcessBuilder (capture) -  Average Memory: 3792.44 KB
+Apache Exec (no capture) - Average Memory: 465.68 KB
+ProcessBuilder (no capture) - Average Memory: 178.40 KB
 
 
 Command: echo Hello, World!
-Apache Exec (capture) - Average Memory: 426.59 KB
-ProcessBuilder (capture) -  Average Memory: 181.54 KB
-Apache Exec (no capture) - Average Memory: 425.15 KB
-ProcessBuilder (no capture) - Average Memory: 181.54 KB
+Apache Exec (capture) - Average Memory: 429.14 KB
+ProcessBuilder (capture) -  Average Memory: 181.36 KB
+Apache Exec (no capture) - Average Memory: 433.24 KB
+ProcessBuilder (no capture) - Average Memory: 181.36 KB
 
 
 Command: df -h
-Apache Exec (capture) - Average Memory: 429.32 KB
-ProcessBuilder (capture) -  Average Memory: 180.62 KB
-Apache Exec (no capture) - Average Memory: 421.06 KB
-ProcessBuilder (no capture) - Average Memory: 181.54 KB
+Apache Exec (capture) - Average Memory: 429.14 KB
+ProcessBuilder (capture) -  Average Memory: 181.36 KB
+Apache Exec (no capture) - Average Memory: 429.14 KB
+ProcessBuilder (no capture) - Average Memory: 181.36 KB

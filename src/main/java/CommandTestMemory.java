@@ -7,6 +7,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public class CommandTestMemory {
@@ -23,7 +24,7 @@ public class CommandTestMemory {
         commands.add(new String[]{"df", "-h"});
 
         for (String[] command : commands) {
-            int repeatTimes = 100;
+            int repeatTimes = 1;
             String commandStr = String.join(" ", command);
             System.out.println("===== Testing Command: " + commandStr + " =====");
             String resultHeader = "Command: " + commandStr + "\n";
@@ -33,17 +34,24 @@ public class CommandTestMemory {
             for (int i = 0; i < repeatTimes; i++) {
                 System.out.println("Iteration " + (i + 1) + " of " + repeatTimes);
                 System.out.println("===== Apache Exec: capture =====");
-                Long m1 = measureExecution(() -> apacheExecCapture(command));
-                totalMemory1 += m1;
+                Long[] m1 = measureExecutionWithPeak(() -> apacheExecCapture(command));
+                totalMemory1 += m1[0];
+                System.out.println("Peak Memory: " + m1[1] / 1024 + " KB");
+
                 System.out.println("===== ProcessBuilder: capture =====");
-                Long m2 = measureExecution(() -> processBuilderCapture(command));
-                totalMemory2 += m2;
+                Long[] m2 = measureExecutionWithPeak(() -> processBuilderCapture(command));
+                totalMemory2 += m2[0];
+                System.out.println("Peak Memory: " + m2[1] / 1024 + " KB");
+
                 System.out.println("===== Apache Exec: no capture =====");
-                Long m3 = measureExecution(() -> apacheExecNoCapture(command));
-                totalMemory3 += m3;
+                Long[] m3 = measureExecutionWithPeak(() -> apacheExecNoCapture(command));
+                totalMemory3 += m3[0];
+                System.out.println("Peak Memory: " + m3[1] / 1024 + " KB");
+
                 System.out.println("===== ProcessBuilder: no capture =====");
-                Long m4 = measureExecution(() -> processBuilderNoCapture(command));
-                totalMemory4 += m4;
+                Long[] m4 = measureExecutionWithPeak(() -> processBuilderNoCapture(command));
+                totalMemory4 += m4[0];
+                System.out.println("Peak Memory: " + m4[1] / 1024 + " KB");
             }
 
             double avgMemory1 = totalMemory1 / repeatTimes;
@@ -68,7 +76,8 @@ public class CommandTestMemory {
         }
     }
 
-    public static Long measureExecution(Runnable task) {
+
+    public static Long[] measureExecutionWithPeak(Runnable task) {
         System.gc();
         try {
             Thread.sleep(100);
@@ -79,13 +88,38 @@ public class CommandTestMemory {
         Runtime runtime = Runtime.getRuntime();
         long beforeUsedMem = runtime.totalMemory() - runtime.freeMemory();
 
+        AtomicBoolean running = new AtomicBoolean(true);
+        long[] peakMemory = {0};
+
+        Thread monitorThread = new Thread(() -> {
+            while (running.get()) {
+                long currentUsedMem = runtime.totalMemory() - runtime.freeMemory();
+                synchronized (peakMemory) {
+                    if (currentUsedMem > peakMemory[0]) {
+                        peakMemory[0] = currentUsedMem;
+                    }
+                }
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        });
+        monitorThread.start();
         task.run();
+
+        running.set(false);
+        try {
+            monitorThread.join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
 
         long afterUsedMem = runtime.totalMemory() - runtime.freeMemory();
 
-        return afterUsedMem - beforeUsedMem;
+        return new Long[]{afterUsedMem - beforeUsedMem, peakMemory[0]};
     }
-
     public static void apacheExecCapture(String... command) {
         try {
             CommandLine cmd = new CommandLine(command[0]);
