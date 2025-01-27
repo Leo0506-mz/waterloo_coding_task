@@ -1,0 +1,9 @@
+<archetype>
+  <id>chengnian_sun</id>
+  <sources>
+    <source>src/main/java/App.java</source>
+  </sources>
+  <testSources>
+    <source>src/DecryptHttps/java/AppTest.java</source>
+  </testSources>
+</archetype>

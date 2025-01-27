@@ -1,0 +1,36 @@
+===== Execution Times =====
+command: ls -l ./src/documents/ls
+Apache Exec (capture) - Time: 5.89 ms
+ProcessBuilder (capture) - Time: 5.84 ms
+Apache Exec (no capture) - Time: 6.04 ms
+ProcessBuilder (no capture) - Time: 5.64 ms
+
+command: wc -l ./src/documents/wc/example.txt
+Apache Exec (capture) - Time: 48.78889999999999 ms
+ProcessBuilder (capture) - Time: 49.568400000000004 ms
+Apache Exec (no capture) - Time: 48.800399999999996 ms
+ProcessBuilder (no capture) - Time: 48.97639999999999 ms
+
+command: curl -I https://www.google.com
+Apache Exec (capture) - Time: 316.237889 ms
+ProcessBuilder (capture) - Time: 318.265684 ms
+Apache Exec (no capture) - Time: 319.298004 ms
+ProcessBuilder (no capture) - Time: 318.849764 ms
+
+command: openssl rand -base64 1048576
+Apache Exec (capture) - Time: 55.96237889 ms
+ProcessBuilder (capture) - Time: 56.62265684 ms
+Apache Exec (no capture) - Time: 47.56298004 ms
+ProcessBuilder (no capture) - Time: 46.43849764000001 ms
+
+command: echo Hello, World!
+Apache Exec (capture) - Time: 2.8496237889 ms
+ProcessBuilder (capture) - Time: 2.6562265683999997 ms
+Apache Exec (no capture) - Time: 2.7356298004 ms
+ProcessBuilder (no capture) - Time: 2.5743849764 ms
+
+command: df -h
+Apache Exec (capture) - Time: 2.358496237889 ms
+ProcessBuilder (capture) - Time: 2.1565622656840002 ms
+Apache Exec (no capture) - Time: 2.177356298004 ms
+ProcessBuilder (no capture) - Time: 2.255743849764 ms
