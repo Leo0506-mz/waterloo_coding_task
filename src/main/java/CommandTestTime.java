@@ -17,18 +17,36 @@ public class CommandTestTime {
 
 
         commands.add(new String[]{"ls", "-l", "./src/documents/ls"});
-        commands.add(new String[]{"wc", "-l", "./src/documents/wc/example.txt"});
-        commands.add(new String[]{"curl", "-I", "https://www.google.com"});
-        commands.add(new String[]{"openssl", "rand", "-base64", "1048576"});
-        commands.add(new String[]{"echo", "Hello, World!"});
-        commands.add(new String[]{"df", "-h"});
+        commands.add(new String[]{"du", "-sh", "./src/documents"});
 
-        final double[] time1 = {0}, time2 = {0}, time3 = {0}, time4 = {0};
+        commands.add(new String[]{"curl", "-I", "https://www.google.com"});
+        commands.add(new String[]{"ping", "-c", "1", "www.google.com"});
+
+        commands.add(new String[]{"openssl", "rand", "-base64", "10485760" });
+        commands.add(new String[]{"sha256sum",  "./src/documents/ls/file1.txt"});
+
+        commands.add(new String[]{"df",  "-h"});
+        commands.add(new String[]{"top",  "-l", "1"});
+
+
+        int warmup_times = 10;
         int repeat_times = 100;
         for (String[] command : commands) {
+            final double[] time1 = {0}, time2 = {0}, time3 = {0}, time4 = {0};
             String commandStr = String.join(" ", command);
             String str0 = "command: " + commandStr + "\n";
             System.out.println("===== Testing Command: " + String.join(" ", command) + " =====");
+
+            for (int i = 0; i < warmup_times; i++) {
+                List<Runnable> warmupMethods = new ArrayList<>();
+                warmupMethods.add(() -> apacheExecCapture(command));
+                warmupMethods.add(() -> processBuilderCapture(command));
+                warmupMethods.add(() -> apacheExecNoCapture(command));
+                warmupMethods.add(() -> processBuilderNoCapture(command));
+                Collections.shuffle(warmupMethods);
+                warmupMethods.forEach(Runnable::run);
+            }
+
             for (int i = 0; i < repeat_times; i++) {
                 List<Runnable> methods = new ArrayList<>();
                 methods.add(() -> {
@@ -143,10 +161,10 @@ public class CommandTestTime {
         }
     }
 
-    public static long measureTime(Runnable task) {
+    public static double measureTime(Runnable task) {
         long startTime = System.nanoTime();
         task.run();
         long endTime = System.nanoTime();
-        return (endTime - startTime) / 1_000_000;
+        return (endTime - startTime) / 1000000.0;
     }
 }

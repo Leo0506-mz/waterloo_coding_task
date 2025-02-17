@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -18,48 +19,83 @@ public class CommandTestThread {
         List<String> executionResults = new ArrayList<>();
 
         commands.add(new String[]{"ls", "-l", "./src/documents/ls"});
-        commands.add(new String[]{"wc", "-l", "./src/documents/wc/example.txt"});
+        commands.add(new String[]{"du", "-sh", "./src/documents"});
+
         commands.add(new String[]{"curl", "-I", "https://www.google.com"});
+        commands.add(new String[]{"ping", "-c", "1", "www.google.com"});
+
         commands.add(new String[]{"openssl", "rand", "-base64", "1048576"});
-        commands.add(new String[]{"echo", "Hello, World!"});
-        commands.add(new String[]{"df", "-h"});
+        commands.add(new String[]{"sha256sum",  "./src/documents/ls/test_file_1.txt"});
 
-//        commands.add(new String[]{"https", "-h","google.com"});
+        commands.add(new String[]{"df",  "-h"});
+        commands.add(new String[]{"top",  "-l", "1"});
 
 
+        int warmup_times = 10;
+        int repeat_times = 100;
         for (String[] command : commands) {
+            final double[] thread1 = {0}, thread2 = {0}, thread3 = {0}, thread4 = {0};
             String commandStr = String.join(" ", command);
-            System.out.println("===== Testing Command: " + commandStr + " =====");
-            String resultHeader = "Command: " + commandStr + "\n";
+            String str0 = "command: " + commandStr + "\n";
+            System.out.println("===== Testing Command: " + String.join(" ", command) + " =====");
 
-            System.out.println("===== Apache Exec: capture =====");
-            long Threads1 = measureThreadUsage(() -> apacheExecCapture(command));
-
-            System.out.println("===== ProcessBuilder: capture =====");
-            long Threads2 = measureThreadUsage(() -> processBuilderCapture(command));
-
-            System.out.println("===== Apache Exec: no capture =====");
-            long Threads3 = measureThreadUsage(() -> apacheExecNoCapture(command));
-
-            System.out.println("===== ProcessBuilder: no capture =====");
-            long Threads4 = measureThreadUsage(() -> processBuilderNoCapture(command));
-
-            System.out.println();
-            String result1 = String.format("Apache Exec (capture) - Threads Used: %d\n", Threads1);
-            String result2 = String.format("ProcessBuilder (capture) - Threads Used: %d\n", Threads2);
-            String result3 = String.format("Apache Exec (no capture) - Threads Used: %d\n", Threads3);
-            String result4 = String.format("ProcessBuilder (no capture) - Threads Used: %d\n", Threads4);
-
-            executionResults.add(resultHeader + result1 + result2 + result3 + result4);
-            System.out.println("===== Execution Thread Usage =====");
-            for (String result : executionResults) {
-                System.out.println(result);
+            for (int i = 0; i < warmup_times; i++) {
+                List<Runnable> warmupMethods = new ArrayList<>();
+                warmupMethods.add(() -> apacheExecCapture(command));
+                warmupMethods.add(() -> processBuilderCapture(command));
+                warmupMethods.add(() -> apacheExecNoCapture(command));
+                warmupMethods.add(() -> processBuilderNoCapture(command));
+                Collections.shuffle(warmupMethods);
+                warmupMethods.forEach(Runnable::run);
             }
+
+            for (int i = 0; i < repeat_times; i++) {
+                List<Runnable> methods = new ArrayList<>();
+                methods.add(() -> {
+                    System.out.println("===== Apache Exec: capture =====");
+                    System.out.println("Order: " + System.nanoTime() + " - Apache Exec: capture");
+                    thread1[0] += measureThreadUsage(() -> apacheExecCapture(command));
+                });
+                methods.add(() -> {
+                    System.out.println("===== ProcessBuilder: capture =====");
+                    System.out.println("Order: " + System.nanoTime() + " - ProcessBuilder: capture");
+                    thread2[0] += measureThreadUsage(() -> processBuilderCapture(command));
+                });
+                methods.add(() -> {
+                    System.out.println("===== Apache Exec: no capture =====");
+                    System.out.println("Order: " + System.nanoTime() + " - Apache Exec: no capture");
+                    thread3[0] += measureThreadUsage(() -> apacheExecNoCapture(command));
+                });
+                methods.add(() -> {
+                    System.out.println("===== ProcessBuilder: no capture =====");
+                    System.out.println("Order: " + System.nanoTime() + " - ProcessBuilder: no capture");
+                    thread4[0] += measureThreadUsage(() -> processBuilderNoCapture(command));
+                });
+                Collections.shuffle(methods);
+                methods.forEach(Runnable::run);
+
+            }
+
+            thread1[0] = thread1[0] / repeat_times;
+            String str1 = "Apache Exec (capture)" + " - Thread: " + thread1[0] + "\n";
+            thread2[0] = thread2[0] / repeat_times;
+            String str2 = "ProcessBuilder (capture)" + " - Thread: " + thread2[0] + "\n";
+            thread3[0] = thread3[0] / repeat_times;
+            String str3 = "Apache Exec (no capture)" + " - Thread: " + thread3[0] + "\n";
+            thread4[0] = thread4[0] / repeat_times;
+            String str4 = "ProcessBuilder (no capture)" + " - Thread: " + thread4[0] + "\n";
+            executionResults.add(str0 + str1 + str2 + str3 + str4);
+        }
+        System.out.println("===== Execution Times =====");
+        for (String result : executionResults) {
+            System.out.println(result);
         }
 
-
-
     }
+
+
+
+
 
     public static long measureThreadUsage(Runnable task) {
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
@@ -74,7 +110,7 @@ public class CommandTestThread {
                     maxThreadCount[0] = currentThreadCount;
                 }
                 try {
-                    Thread.sleep(10);
+                    Thread.sleep(1);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }

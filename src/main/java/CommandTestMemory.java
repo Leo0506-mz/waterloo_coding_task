@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -17,67 +18,83 @@ public class CommandTestMemory {
         List<String> executionResults = new ArrayList<>();
 
         commands.add(new String[]{"ls", "-l", "./src/documents/ls"});
-        commands.add(new String[]{"wc", "-l", "./src/documents/wc/example.txt"});
+        commands.add(new String[]{"du", "-sh", "./src/documents"});
+
         commands.add(new String[]{"curl", "-I", "https://www.google.com"});
+        commands.add(new String[]{"ping", "-c", "1", "www.google.com"});
+
         commands.add(new String[]{"openssl", "rand", "-base64", "1048576"});
-        commands.add(new String[]{"echo", "Hello, World!"});
-        commands.add(new String[]{"df", "-h"});
+        commands.add(new String[]{"sha256sum",  "./src/documents/ls/test_file_1.txt"});
 
+        commands.add(new String[]{"df",  "-h"});
+        commands.add(new String[]{"top",  "-l", "1"});
+
+        int warmup_times = 10;
+        int repeat_times = 100;
         for (String[] command : commands) {
-            int repeatTimes = 1;
+            final double[] memory1 = {0}, memory2 = {0}, memory3 = {0}, memory4 = {0};
             String commandStr = String.join(" ", command);
-            System.out.println("===== Testing Command: " + commandStr + " =====");
-            String resultHeader = "Command: " + commandStr + "\n";
+            String str0 = "command: " + commandStr + "\n";
+            System.out.println("===== Testing Command: " + String.join(" ", command) + " =====");
 
-            double totalMemory1 = 0, totalMemory2 = 0, totalMemory3 = 0, totalMemory4 = 0;
-
-            for (int i = 0; i < repeatTimes; i++) {
-                System.out.println("Iteration " + (i + 1) + " of " + repeatTimes);
-                System.out.println("===== Apache Exec: capture =====");
-                Long[] m1 = measureExecutionWithPeak(() -> apacheExecCapture(command));
-                totalMemory1 += m1[0];
-                System.out.println("Peak Memory: " + m1[1] / 1024 + " KB");
-
-                System.out.println("===== ProcessBuilder: capture =====");
-                Long[] m2 = measureExecutionWithPeak(() -> processBuilderCapture(command));
-                totalMemory2 += m2[0];
-                System.out.println("Peak Memory: " + m2[1] / 1024 + " KB");
-
-                System.out.println("===== Apache Exec: no capture =====");
-                Long[] m3 = measureExecutionWithPeak(() -> apacheExecNoCapture(command));
-                totalMemory3 += m3[0];
-                System.out.println("Peak Memory: " + m3[1] / 1024 + " KB");
-
-                System.out.println("===== ProcessBuilder: no capture =====");
-                Long[] m4 = measureExecutionWithPeak(() -> processBuilderNoCapture(command));
-                totalMemory4 += m4[0];
-                System.out.println("Peak Memory: " + m4[1] / 1024 + " KB");
+            for (int i = 0; i < warmup_times; i++) {
+                List<Runnable> warmupMethods = new ArrayList<>();
+                warmupMethods.add(() -> apacheExecCapture(command));
+                warmupMethods.add(() -> processBuilderCapture(command));
+                warmupMethods.add(() -> apacheExecNoCapture(command));
+                warmupMethods.add(() -> processBuilderNoCapture(command));
+                Collections.shuffle(warmupMethods);
+                warmupMethods.forEach(Runnable::run);
             }
 
-            double avgMemory1 = totalMemory1 / repeatTimes;
-            String result1 = String.format("Apache Exec (capture) - Average Memory: %.2f KB\n", avgMemory1 / 1024);
+            for (int i = 0; i < repeat_times; i++) {
+                List<Runnable> methods = new ArrayList<>();
+                methods.add(() -> {
+                    System.out.println("===== Apache Exec: capture =====");
+                    System.out.println("Order: " + System.nanoTime() + " - Apache Exec: capture");
+                    memory1[0] += measureExecutionWithPeak(() -> apacheExecCapture(command));
+                });
+                methods.add(() -> {
+                    System.out.println("===== ProcessBuilder: capture =====");
+                    System.out.println("Order: " + System.nanoTime() + " - ProcessBuilder: capture");
+                    memory2[0] += measureExecutionWithPeak(() -> processBuilderCapture(command));
+                });
+                methods.add(() -> {
+                    System.out.println("===== Apache Exec: no capture =====");
+                    System.out.println("Order: " + System.nanoTime() + " - Apache Exec: no capture");
+                    memory3[0] += measureExecutionWithPeak(() -> apacheExecNoCapture(command));
+                });
+                methods.add(() -> {
+                    System.out.println("===== ProcessBuilder: no capture =====");
+                    System.out.println("Order: " + System.nanoTime() + " - ProcessBuilder: no capture");
+                    memory4[0] += measureExecutionWithPeak(() -> processBuilderNoCapture(command));
+                });
+                Collections.shuffle(methods);
+                methods.forEach(Runnable::run);
 
-            double avgMemory2 = totalMemory2 / repeatTimes;
-            String result2 = String.format("ProcessBuilder (capture) -  Average Memory: %.2f KB\n", avgMemory2 / 1024);
+            }
 
-            double avgMemory3 = totalMemory3 / repeatTimes;
-            String result3 = String.format("Apache Exec (no capture) - Average Memory: %.2f KB\n", avgMemory3 / 1024);
+            memory1[0] = memory1[0] / repeat_times;
+            String str1 = String.format("Apache Exec (capture) - Memory: %.2f MB\n", memory1[0] / (1024.0 * 1024.0));
 
-            double avgMemory4 = totalMemory4 / repeatTimes;
-            String result4 = String.format("ProcessBuilder (no capture) - Average Memory: %.2f KB\n\n", avgMemory4 / 1024);
+            memory2[0] = memory2[0] / repeat_times;
+            String str2 = String.format("ProcessBuilder (capture) - Memory: %.2f MB\n", memory2[0] / (1024.0 * 1024.0));
 
-            executionResults.add(resultHeader + result1 + result2 + result3 + result4);
-            System.out.println();
+            memory3[0] = memory3[0] / repeat_times;
+            String str3 = String.format("Apache Exec (no capture) - Memory: %.2f MB\n", memory3[0] / (1024.0 * 1024.0));
+
+            memory4[0] = memory4[0] / repeat_times;
+            String str4 = String.format("ProcessBuilder (no capture) - Memory: %.2f MB\n", memory4[0] / (1024.0 * 1024.0));
+            executionResults.add(str0 + str1 + str2 + str3 + str4);
         }
-
-        System.out.println("===== Execution Times and Memory Usage =====");
+        System.out.println("===== Execution Times =====");
         for (String result : executionResults) {
             System.out.println(result);
         }
     }
 
 
-    public static Long[] measureExecutionWithPeak(Runnable task) {
+    public static long measureExecutionWithPeak(Runnable task) {
         System.gc();
         try {
             Thread.sleep(100);
@@ -86,7 +103,6 @@ public class CommandTestMemory {
         }
 
         Runtime runtime = Runtime.getRuntime();
-        long beforeUsedMem = runtime.totalMemory() - runtime.freeMemory();
 
         AtomicBoolean running = new AtomicBoolean(true);
         long[] peakMemory = {0};
@@ -100,7 +116,7 @@ public class CommandTestMemory {
                     }
                 }
                 try {
-                    Thread.sleep(50);
+                    Thread.sleep(1);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
@@ -116,9 +132,7 @@ public class CommandTestMemory {
             Thread.currentThread().interrupt();
         }
 
-        long afterUsedMem = runtime.totalMemory() - runtime.freeMemory();
-
-        return new Long[]{afterUsedMem - beforeUsedMem, peakMemory[0]};
+        return peakMemory[0];
     }
     public static void apacheExecCapture(String... command) {
         try {

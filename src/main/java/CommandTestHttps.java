@@ -4,6 +4,7 @@ import org.apache.commons.exec.PumpStreamHandler;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +13,8 @@ public class CommandTestHttps {
     public static void main(String[] args) {
 
         List<String[]> commands = new ArrayList<>();
-        commands.add(new String[]{"https", "-h","google.com"});
+        commands.add(new String[]{"http", "-h", "--ignore-stdin",  "google.com"});
+//        commands.add(new String[]{"http", "-h",  "google.com"});
 
 
         for (String[] command : commands) {
@@ -77,6 +79,7 @@ public class CommandTestHttps {
         try {
             ProcessBuilder builder = new ProcessBuilder(command);
             builder.redirectErrorStream(false);
+            builder.redirectInput(new File("/dev/null")); //
             Process process = builder.start();
 
             BufferedReader stdoutReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
