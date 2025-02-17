@@ -1,6 +1,0 @@
-ls -l ./src/documents/ls
-wc -l ./src/documents/wc/example.txt
-curl -I https://www.google.com
-openssl rand -base64 1048576
-echo Hello, World!
-df -h
